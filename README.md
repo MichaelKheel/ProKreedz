@@ -1,4 +1,4 @@
-# ProKreedz plugin  [![GitHub release](https://img.shields.io/github/release/michaelkheel/UQJumpstats.svg)](https://github.com/MichaelKheel/UQJumpstats/releases)
+# ProKreedz plugin  [![GitHub release](https://img.shields.io/github/release/michaelkheel/ProKreedz.svg)](https://github.com/MichaelKheel/ProKreedz/releases)
 Initial version of the file **ProKreedz v2.31 by nucLeaR**
 
 The plugin was created for a specific server and was not expected to ever be made public, therefore it does not have any settings or cvars.
@@ -24,3 +24,6 @@ The plugin was created for a specific server and was not expected to ever be mad
 * mysql
 
 ### Commands
+```
+
+```

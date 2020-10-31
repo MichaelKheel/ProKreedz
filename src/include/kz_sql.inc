@@ -45,7 +45,8 @@ new icons[33]
 new TP_MODE[33]
 new noTeleport[32]
 new ShowTime[33]
-new Gagged[33]
+new SaveCfgDate[33][40]
+//new Gagged[33]
 enum
 {
 	TOP_NULL,
@@ -122,7 +123,7 @@ public QueryInstallTable()
 {
 	new CreateInto[1001];
 
-	formatex(CreateInto, 1000, "CREATE TABLE IF NOT EXISTS `kz_config` (`id` int(11) NOT NULL,`authid` varchar(32) NOT NULL,`timer` int(2) NOT NULL DEFAULT '1',`invisU` int(2) NOT NULL,`invisW` int(2) NOT NULL,`invisF` int(2) NOT NULL,`bt` int(2) NOT NULL,`icon` int(2) NOT NULL DEFAULT '1',`cp` int(2) NOT NULL,`sl` int(2) NOT NULL DEFAULT '1',`sa` int(2) NOT NULL)");
+	formatex(CreateInto, 1000, "CREATE TABLE IF NOT EXISTS `kz_config` (`id` int(11) NOT NULL AUTO_INCREMENT,`authid` varchar(32) NOT NULL,`timer` int(2) NOT NULL DEFAULT '1',`invisU` int(2) NOT NULL DEFAULT '0',`invisW` int(2) NOT NULL DEFAULT '0',`invisF` int(2) NOT NULL DEFAULT '0',`bt` int(2) NOT NULL DEFAULT '0',`icon` int(2) NOT NULL DEFAULT '1',`cp` int(2) NOT NULL DEFAULT '0',`sl` int(2) NOT NULL DEFAULT '1',`sa` int(2) NOT NULL DEFAULT '0', `date` datetime NOT NULL, PRIMARY KEY (`id`))");
 	SQL_ThreadQuery(g_SqlTuple, "QueryHandle", CreateInto);
 
 	formatex(CreateInto, 1000, "CREATE TABLE IF NOT EXISTS `kz_top15` (`hash` DECIMAL(5,0) NOT NULL,`name` VARCHAR(64) NOT NULL COLLATE 'latin1_swedish_ci',`authid` VARCHAR(64) NOT NULL COLLATE 'latin1_swedish_ci',`pro1` DECIMAL(5,0) NOT NULL,`pro3` DECIMAL(5,0) NOT NULL,`nub1` DECIMAL(5,0) NOT NULL,`nub3` DECIMAL(5,0) NOT NULL,`point` DECIMAL(5,0) NOT NULL)");
@@ -247,7 +248,7 @@ public SQL_MapID()
 	if(equali(kz_maptype, "axn")) mapIsAXN = true;
 	if(equali(kz_maptype, "slide")) mapIsSlide = true;
 	if(equali(kz_maptype, "gravity")) mapIsGravity = true;
-	if(equali(kz_maptype, "")) kz_maptype = "Unknown";
+	if(equali(kz_maptype, "")) kz_maptype = "n/a";
 
 	if (delete_entity)
 	{
@@ -663,16 +664,16 @@ public SQL_ConfigHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSi
 	{
 		if(SQL_NumResults(hQuery))
 		{
-			ShowTime[id] = SQL_ReadResult(hQuery, 5)
-			InvisUser[id] = SQL_ReadResult(hQuery, 6)
-			InvisWater[id] = SQL_ReadResult(hQuery, 7)
-			full_Invisible[id] = SQL_ReadResult(hQuery, 8)
-			noTeleport[id] = SQL_ReadResult(hQuery, 9)
-			icons[id] = SQL_ReadResult(hQuery, 10)
-			TP_MODE[id] = SQL_ReadResult(hQuery, 11)
-			SpecList[id] = SQL_ReadResult(hQuery, 12)
-			SpecAdmImm[id] = SQL_ReadResult(hQuery, 13)
-			Gagged[id] = SQL_ReadResult(hQuery, 15)
+			ShowTime[id] = SQL_ReadResult(hQuery, 2)
+			InvisUser[id] = SQL_ReadResult(hQuery, 3)
+			InvisWater[id] = SQL_ReadResult(hQuery, 4)
+			full_Invisible[id] = SQL_ReadResult(hQuery, 5)
+			noTeleport[id] = SQL_ReadResult(hQuery, 6)
+			icons[id] = SQL_ReadResult(hQuery, 7)
+			TP_MODE[id] = SQL_ReadResult(hQuery, 8)
+			SpecList[id] = SQL_ReadResult(hQuery, 9)
+			SpecAdmImm[id] = SQL_ReadResult(hQuery, 10)
+			SQL_ReadResult(hQuery, 11, SaveCfgDate[id], charsmax(SaveCfgDate))
 		}
 		else
 		{
@@ -685,7 +686,7 @@ public SQL_ConfigHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSi
 			SpecList[id] = 1
 			SpecAdmImm[id] = 0
 			ShowTime[id] = 1
-			Gagged[id] = 0;
+			//Gagged[id] = 0;
 		}
 	}
 
@@ -695,9 +696,50 @@ public SQL_ConfigHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSi
 
 public SQL_ConfigSave(id)
 {
-	new createinto[1001]
-	formatex(createinto, sizeof createinto - 1, "UPDATE `kz_config` SET `timer` = '%d',`invisU` = '%s',`invisW` = '%s',`invisF` = '%s',`bt` = '%s',`icon` = '%s',`cp` = '%s',`sl` = '%s',`sa` = '%s' WHERE (`authid` = '%s')", ShowTime[id],(InvisUser[id] ? "1":"0"),(InvisWater[id] ? "1":"0"),(full_Invisible[id] ? "1":"0"),(noTeleport[id] ? "1":"0"),(icons[id] ? "1":"0"),(TP_MODE[id] ? "1":"0"),(SpecList[id] ? "1":"0"),(SpecAdmImm[id] ? "1":"0"), kz_authid[id])
-	SQL_ThreadQuery(g_SqlTuple, "SQL_WorkHandle", createinto)
+	new createinto[128], cData[1]
+	cData[0] = id
+	formatex(createinto, sizeof createinto - 1, "SELECT * FROM kz_config WHERE authid='%s'", kz_authid[id]);
+	SQL_ThreadQuery(g_SqlTuple, "SQL_ConfigSaveHandle", createinto, cData, 1);
+}
+
+public SQL_ConfigSaveHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSize, Float:fQueueTime)
+{
+	new id = cData[0]
+	new nowdate[40];
+	get_time("%Y-%m-%d %H:%M:%S", nowdate, sizeof nowdate - 1)
+	SaveCfgDate[id] = nowdate;
+
+	if( failstate == TQUERY_CONNECT_FAILED )
+	{
+		set_fail_state("Could not connect to database.");
+	}
+	else if( failstate == TQUERY_QUERY_FAILED )
+	{
+		set_fail_state("Query failed.");
+	}
+	else if( errcode )
+	{
+		log_amx("Error on query: %s", error);
+	}
+	else
+	{
+		if(SQL_NumResults(hQuery))
+		{
+			new createinto[1001];
+			formatex(createinto, sizeof createinto - 1, "UPDATE `kz_config` SET `timer` = '%d',`invisU` = '%d',`invisW` = '%d',`invisF` = '%d',`bt` = '%d',`icon` = '%d',`cp` = '%d',`sl` = '%d',`sa` = '%d', `date` = '%s' WHERE (`authid` = '%s')", ShowTime[id], InvisUser[id], InvisWater[id], full_Invisible[id], noTeleport[id], icons[id], TP_MODE[id], SpecList[id], SpecAdmImm[id], SaveCfgDate[id], kz_authid[id]);
+			SQL_ThreadQuery(g_SqlTuple, "SQL_WorkHandle", createinto);
+			ColorChat(id, BLUE, "^x01%s^x03 The config was saved successfully.", prefix)
+		}
+		else
+		{
+			new createinto[1001];
+			formatex(createinto, sizeof createinto - 1, "INSERT INTO `kz_config` VALUES (null, '%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s')", kz_authid[id], ShowTime[id], InvisUser[id], InvisWater[id], full_Invisible[id], noTeleport[id], icons[id], TP_MODE[id], SpecList[id], SpecAdmImm[id], SaveCfgDate[id]);
+			SQL_ThreadQuery(g_SqlTuple, "SQL_WorkHandle", createinto);
+			ColorChat(id, BLUE, "^x01%s^x03 The config was saved successfully.", prefix)
+		}
+	}
+
+	SQL_FreeHandle(hQuery)
 }
 
 public SQL_WorkHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSize, Float:fQueueTime)

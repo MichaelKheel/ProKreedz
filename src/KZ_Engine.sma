@@ -1651,6 +1651,7 @@ public ShowTimer_Menu(id)
 	menu_additem( menu, shudtimer, "2" )
 	menu_additem( menu, notimer, "3" )
 
+	menu_setprop(menu, MPROP_EXITNAME, "Back")
 	menu_display(id, menu, 0)
 
 	return PLUGIN_HANDLED
@@ -3293,12 +3294,10 @@ public MenuHandler(id , menu, item)
 	return PLUGIN_HANDLED
 }
 
-// Invise Menu
-
 public ConfigMenu(id)
 {
 	new menu = menu_create("\yConfig Menu^n\rAuto updatable configuration\w", "ConfigMenuHandler")
-	new msginvis[64], msgwaterinvis[64], msgfull[64], noteleport[64], god[64], icon[64], checkmode[64], speclist[64],specadm[64]
+	new msginvis[64], msgwaterinvis[64], msgfull[64], noteleport[64], god[64], icon[64], checkmode[64], speclist[64],specadm[64], savemenu[64]
 
 	formatex(msginvis, 63, "Invisible Players - %s",  InvisUser[id] ? "\yON" : "\rOFF" )
 	if(theWaterInvis)
@@ -3309,9 +3308,10 @@ public ConfigMenu(id)
 	formatex(msgfull, 63, "Full Invisible - %s^n", full_Invisible[id] ? "\yON" : "\rOFF" )
 	formatex(god, 63, "GodMode - %s", GodModeOn[id] ? "\yON" : "\rOFF" )
 	formatex(noteleport, 63, "Block Teleport - %s", noTeleport[id] ? "\yON" : "\rOFF" )
-	formatex(icon, 63, "Icons - %s", icons[id] ? "\yON" : "\rOFF" )
+	formatex(icon, 63, "Icons - %s^n^n", icons[id] ? "\yON" : "\rOFF" )
 	formatex(checkmode, 63, "CheckPoint Mode - %s^n", TP_MODE[id] ? "\yON" : "\rOFF" )
 	formatex(speclist, 63, "Spectator List - %s", SpecList[id] ? "\yON" : "\rOFF" )
+	formatex(savemenu, 63, "Save Config \d[\r%s\d]", SaveCfgDate[id] ? SaveCfgDate[id] : "n/a")
 
 	if (get_user_flags(id) & KZ_LEVEL_1)
 		formatex(specadm, 63, "Admin Invisible Spec - %s^n", SpecAdmImm[id] ? "\yON" : "\rOFF" )
@@ -3324,10 +3324,17 @@ public ConfigMenu(id)
 	menu_additem( menu, god, "4" )
 	menu_additem( menu, noteleport, "5" )
 	menu_additem( menu, icon, "6" )
-	menu_additem( menu, checkmode, "7" )
-	menu_additem( menu, speclist, "8" )
-	menu_additem( menu, specadm, "9" )
-	menu_additem( menu, "ShowTimer Menu", "10")
+
+	menu_additem( menu, savemenu, "7")
+
+	menu_additem( menu, checkmode, "8" )
+	menu_additem( menu, speclist, "9" )
+	menu_additem( menu, specadm, "10" )
+	menu_additem( menu, "ShowTimer Menu \y[>]^n^n", "10")
+
+	menu_addblank( menu, 1)
+	menu_addblank( menu, 1)
+	menu_additem( menu, savemenu, "12")
 
 	menu_setprop(menu, MPROP_NEXTNAME, "Next")
 	menu_setprop(menu, MPROP_BACKNAME, "Back")
@@ -3379,23 +3386,33 @@ public ConfigMenuHandler(id, menu, item)
 		}
 		case 6:
 		{
+			SQL_ConfigSave(id);
+			ConfigMenu(id);
+		}
+		case 7:
+		{
 			cmdCheckFix(id)
 			ConfigMenu(id)
 
 		}
-		case 7:
+		case 8:
 		{
 			cmdSpeclist(id)
 			ConfigMenu(id)
 		}
-		case 8:
+		case 9:
 		{
 			cmdSpeclistAdm(id)
 			ConfigMenu(id)
 		}
-		case 9:
+		case 10:
 		{
 			ShowTimer_Menu(id)
+		}
+		case 11:
+		{
+			SQL_ConfigSave(id);
+			ConfigMenu(id)
 		}
 	}
 	return PLUGIN_CONTINUE

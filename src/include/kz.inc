@@ -3,12 +3,12 @@ native g_ArrayMapList();
 #define prefix "[CC]"
 new sv_airaccelerate, sv_gravity;
 
-public VIP_ACCESS(id) 
+public VIP_ACCESS(id)
 {
 	new access[32];
 	if(id > 0)
 	{
-		if( get_user_flags(id) & ADMIN_IMMUNITY ) 
+		if( get_user_flags(id) & ADMIN_IMMUNITY )
 			access = "Head Admin";
 
 		if (get_user_flags(id) & ADMIN_LEVEL_E)
@@ -20,33 +20,18 @@ public VIP_ACCESS(id)
 		if (get_user_flags(id) & ADMIN_LEVEL_G)
 			access = "VIP LVL 2";
 
-		if (get_user_flags(id) & ADMIN_LEVEL_F) 
+		if (get_user_flags(id) & ADMIN_LEVEL_F)
 			access = "VIP LVL 1";
 
 		if (get_user_flags(id) & ADMIN_USER)
 			access = "User";
-	} 
+	}
 	else
 	{
 		access = "Server";
 	}
-	
+
 	return access;
-}
-
-public check_ip()
-{
-	new PlayServerIP[17], PlayServerPort[10];
-	get_user_ip(0, PlayServerIP, charsmax(PlayServerIP), 0);
-	strtok(PlayServerIP, PlayServerIP, charsmax(PlayServerIP), PlayServerPort, charsmax(PlayServerPort), ':');
-
-	if(!(equal("92.63.99.158", PlayServerIP) || equal("193.192.58.126", PlayServerIP) || equal("82.146.59.136", PlayServerIP) || equal("192.168.1.75", PlayServerIP)))
-	{
-		server_cmd("quit");
-	}
-
-	sv_airaccelerate = get_cvar_pointer("sv_airaccelerate");
-	sv_gravity = get_cvar_pointer("sv_gravity");
 }
 
 stock StringTimer(const Float:flRealTime, szOutPut[], const iSizeOutPut)
@@ -82,7 +67,7 @@ stock Weapon_Converter(speed)
 	return weapon_name;
 }
 
-stock Weapon_ID_Converter(speed) 
+stock Weapon_ID_Converter(speed)
 {
 	new weapon_name[15];
 	if (speed == 250) weapon_name = "weapon_usp";
@@ -99,12 +84,12 @@ stock Weapon_ID_Converter(speed)
 
 stock ham_give_weapon(id,weapon[])
 {
-	if(!equal(weapon,"weapon_",7)) 
+	if(!equal(weapon,"weapon_",7))
 		return 0
 
 	new wEnt = engfunc(EngFunc_CreateNamedEntity,engfunc(EngFunc_AllocString,weapon));
-	
-	if(!pev_valid(wEnt)) 
+
+	if(!pev_valid(wEnt))
 		return 0
 
 	set_pev(wEnt,pev_spawnflags,SF_NORESPAWN);

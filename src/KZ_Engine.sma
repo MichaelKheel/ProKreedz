@@ -371,20 +371,21 @@ new const g_remove_ent[][] =
 	"armoury_entity", "game_player_equip", "player_weaponstrip",
 	"info_deathmatch_start"
 }
+
 // =================================================================================================
+#include <kz_sql>
 // =================================================================================================
-// =================================================================================================
-// =================================================================================================
-#include <kz_sql> // ===============================================================================
-// =================================================================================================
-// =================================================================================================
-// =================================================================================================
-// =================================================================================================
+
+
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INITIAL PLUGIN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
-	check_ip();
+
 	get_mapname(MapName, 63)
 
 	if(get_cvar_float("kz_uptime") == 0.0)
@@ -637,9 +638,6 @@ public plugin_init()
 	format(szCvarValue, charsmax(szCvarValue), "%s T:0(%d)", szCvarValue, iCount)
 	set_pcvar_string(g_pCvarMapsSpawns, szCvarValue)
 
-	server_print("[KZ] Airaccelerate = %d", get_pcvar_num(sv_airaccelerate))
-	server_print("[KZ] Gravity = %d", get_pcvar_num(sv_gravity))
-
 	// Получения ID мапы и проверка со списком карт
 	SQL_MapID()
 
@@ -756,6 +754,14 @@ public plugin_precache()
 
 public plugin_cfg()
 {
+	// getting information on server config
+	sv_airaccelerate = get_cvar_pointer("sv_airaccelerate");
+	sv_gravity = get_cvar_pointer("sv_gravity");
+
+	server_print("[KZ] Airaccelerate = %d", get_pcvar_num(sv_airaccelerate))
+	server_print("[KZ] Gravity = %d", get_pcvar_num(sv_gravity))
+
+	// Load best run
 	ReadBestRunFile()
 }
 

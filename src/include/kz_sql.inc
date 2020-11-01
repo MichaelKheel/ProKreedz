@@ -586,7 +586,7 @@ public kz_profile(id)
 	len += format(menu[len], 1279-len, "\yGeneral Records:\w %d^n", kz_nub1[id])
 	len += format(menu[len], 1279-len, "\yGeneral top 1,2,3 Records:\w %d^n^n", kz_nub3[id])
 
-	format(menu[len], 1279-len, "\r1. %s^n\r2. Update stats^n\r3. Save Config^n^n\r0.\w Exit to Main menu", vip_add)
+	format(menu[len], 1279-len, "\r1. %s^n\r2. Update stats^n^n\r0.\w Back to Main menu", vip_add)
 	show_menu(id, (1<<0)|(1<<1)|(1<<2)|(1<<9), menu, -1, "KZ Profile")
 
 	return PLUGIN_HANDLED
@@ -623,9 +623,6 @@ public kz_profileHandle(id, key) {
 		}
 		case 1: {
 			SQL_profile(id)
-		}
-		case 2: {
-			SQL_ConfigSave(id)
 		}
 		case 9:{
 			top15menu(id)

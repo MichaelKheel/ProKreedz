@@ -23,9 +23,20 @@ The plugin was created for a specific server and was not expected to ever be mad
 * geoip
 * mysql
 
+### Install Guide
+Enter data from your base in the file (_your-compiler_/inc/sqlx.inc) or in a config (addons/amxmodx/configs/sql.ini)
+```
+stock Handle:SQL_MakeStdTuple(timeout = 0)
+{
+	new host [] = "127.0.0.1"
+	new user [] = ""
+	new pass [] = ""
+	new db [] = "kz"
+```
+
 ### Admin Commands
 Commands | Discription
---- | --- 
+--- | ---
 `amx_addsavepos` | Command to save the player's position at the specified position.
 `amx_botmenu` | open the bot management menu
 `amx_hook` | open menu awards
@@ -33,7 +44,7 @@ Commands | Discription
 
 ### Commands
 Commands | Discription
---- | --- 
+--- | ---
  `/menu` `/kz` | Server menu
  `/top` `/top10` `/top15` | KZ Top menu
  `/pro15` `/nub15` | open motd stats page
@@ -49,7 +60,7 @@ Commands | Discription
 `/cp` | save checkpoint
 `/tp` `/gc` `/tp [1....10]` | go to checkpoint
 `/stuck` | go to last checkpoint
-`/pause` | pause timer 
+`/pause` | pause timer
 `/reset` | reset timer
 `/god` `/invis` `/noteleport` `/icons` | open config menu
 `/pro15` | View list of PRO records
@@ -58,7 +69,8 @@ Commands | Discription
 `/speclist` | remove spectators list
 `/showkeys` | show the hud keys
 `/measure` `/distance` | open the menu for measuring surfaces
-`/fps` | show the fps of all players.
+`/fps` | show the fps of all players
 `/speed` | show the hud speedometer
 `/version` `/about` | shows the plugin version
 `/help` | show motd with all information about server
+`/uptime` | show server uptime

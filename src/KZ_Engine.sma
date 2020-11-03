@@ -124,7 +124,8 @@ v1.01 = Меню savepos открывается, по нажатию кнопк�
 #define VERSION "1.01"
 #define AUTHOR "`L."
 
-#define pgL_sql_files "kreedz.ru/"
+#define pgL_sql_files "https://domain-name/"
+#define ALLMAPS "addons/amxmodx/configs/allmaps.txt"
 #define KZ_LEVEL_1 ADMIN_CFG
 
 #define SCOREATTRIB_NONE    0
@@ -371,33 +372,28 @@ new const g_remove_ent[][] =
 	"armoury_entity", "game_player_equip", "player_weaponstrip",
 	"info_deathmatch_start"
 }
+
 // =================================================================================================
+#include <kz_sql>
 // =================================================================================================
-// =================================================================================================
-// =================================================================================================
-#include <kz_sql> // ===============================================================================
-// =================================================================================================
-// =================================================================================================
-// =================================================================================================
-// =================================================================================================
+
+
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INITIAL PLUGIN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
-	check_ip();
+
 	get_mapname(MapName, 63)
 
 	if(get_cvar_float("kz_uptime") == 0.0)
 	{
-		if(equali(MapName, "kz_longjumps2"))
-		{
-			server_cmd("restart")
-		} else
-		{
-			register_cvar("kz_uptime", "0.000001")
-			set_task(0.5, "ChangeRandom")
-			return PLUGIN_HANDLED
-		}
+		register_cvar("kz_uptime", "0.000001")
+		set_task(0.5, "ChangeRandom")
+		return PLUGIN_HANDLED
 	}
 
 	SyncHudTimer = CreateHudSyncObj()
@@ -450,7 +446,7 @@ public plugin_init()
 	kz_register_saycmd("help", "jumphelp", 0)
 	kz_register_saycmd("version", "cmdVersion",0)
 	kz_register_saycmd("about", "cmdVersion",0)
-	//kz_register_saycmd("uptime", "cmdUptime",0)
+	kz_register_saycmd("uptime", "cmdUptime",0)
 	// Spec List
 	kz_register_saycmd("spec","ct",0)
 	kz_register_saycmd("ct","ct",0)
@@ -637,9 +633,6 @@ public plugin_init()
 	format(szCvarValue, charsmax(szCvarValue), "%s T:0(%d)", szCvarValue, iCount)
 	set_pcvar_string(g_pCvarMapsSpawns, szCvarValue)
 
-	server_print("[KZ] Airaccelerate = %d", get_pcvar_num(sv_airaccelerate))
-	server_print("[KZ] Gravity = %d", get_pcvar_num(sv_gravity))
-
 	// Получения ID мапы и проверка со списком карт
 	SQL_MapID()
 
@@ -654,10 +647,10 @@ public plugin_end()
 
 public ChangeRandom()
 {
-	if(file_exists("addons/amxmodx/configs/allmaps.txt"))
+	if(file_exists(ALLMAPS))
 	{
-		new mapname[64], txtsize, line = random_num(0, file_size("addons/amxmodx/configs/allmaps.txt", 1) - 2)
-		read_file("addons/amxmodx/configs/allmaps.txt", line, mapname, 63, txtsize)
+		new mapname[64], txtsize, line = random_num(0, file_size(ALLMAPS, 1) - 2)
+		read_file(ALLMAPS, line, mapname, 63, txtsize)
 		server_cmd("changelevel %s", mapname)
 	}
 }
@@ -717,8 +710,8 @@ public ServerInfo_Console(id)
 	client_cmd(id, "echo ^"=========================================^"")
 }
 
-/*public cmdUptime(id) {
-	new timeunit_seconds = get_total_uptime()
+public cmdUptime(id) {
+	new timeunit_seconds = floatround(get_cvar_float("kz_uptime") + halflife_time(), floatround_floor)
 	new timeunit_minutes
 	new timeunit_hours
 	new timeunit_days
@@ -740,7 +733,7 @@ public ServerInfo_Console(id)
 	else ColorChat(id, BLUE, "^x01%s^x03 Server uptime is %d second%s", prefix, timeunit_seconds, timeunit_seconds > 1 ? "s" : "")
 
 	return PLUGIN_CONTINUE
-}*/
+}
 
 public plugin_precache()
 {
@@ -756,6 +749,14 @@ public plugin_precache()
 
 public plugin_cfg()
 {
+	// getting information on server config
+	sv_airaccelerate = get_cvar_pointer("sv_airaccelerate");
+	sv_gravity = get_cvar_pointer("sv_gravity");
+
+	server_print("[KZ] Airaccelerate = %d", get_pcvar_num(sv_airaccelerate))
+	server_print("[KZ] Gravity = %d", get_pcvar_num(sv_gravity))
+
+	// Load best run
 	ReadBestRunFile()
 }
 
@@ -1645,6 +1646,7 @@ public ShowTimer_Menu(id)
 	menu_additem( menu, shudtimer, "2" )
 	menu_additem( menu, notimer, "3" )
 
+	menu_setprop(menu, MPROP_EXITNAME, "Back")
 	menu_display(id, menu, 0)
 
 	return PLUGIN_HANDLED
@@ -1812,12 +1814,12 @@ public vote_block(id)
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 public curweapon(id)
 {
- 	static last_weapon[33];
+	static last_weapon[33];
 	static weapon_active, weapon_num
 	weapon_active = read_data(1)
 	weapon_num = read_data(2)
 
- 	if( ( weapon_num != last_weapon[id] ) && weapon_active)
+	if( ( weapon_num != last_weapon[id] ) && weapon_active)
 	{
 		last_weapon[id] = weapon_num;
 
@@ -2980,15 +2982,15 @@ public addToFullPack(es, e, ent, host, hostflags, player, pSet)
 	if( player )
 	{
 		if(host != ent && get_orig_retval() && is_user_alive(host) )
-    	{
-    		set_es(es, ES_Solid, SOLID_NOT)
+		{
+			set_es(es, ES_Solid, SOLID_NOT)
 			set_es(es, ES_RenderMode, kRenderTransAdd) // подсвеченная моделька как голограмма.
 			set_es(es, ES_RenderAmt, 50)
 		}
 
 		if(InvisUser[host])
 		{
- 		  set_es(es, ES_RenderMode, kRenderTransTexture)
+			set_es(es, ES_RenderMode, kRenderTransTexture)
 			set_es(es, ES_RenderAmt, 0)
 			set_es(es, ES_Origin, { 999999999.0, 999999999.0, 999999999.0 } )
 		}
@@ -3029,7 +3031,7 @@ public semiclip_postThink(id)
 		g_iPlayer = g_iPlayers[i]
 		if( g_iPlayer != id )
 			set_pev(g_iPlayer, pev_solid, SOLID_SLIDEBOX)
-   }
+	}
 }
 
 public Invis_User(id)
@@ -3287,12 +3289,10 @@ public MenuHandler(id , menu, item)
 	return PLUGIN_HANDLED
 }
 
-// Invise Menu
-
 public ConfigMenu(id)
 {
 	new menu = menu_create("\yConfig Menu^n\rAuto updatable configuration\w", "ConfigMenuHandler")
-	new msginvis[64], msgwaterinvis[64], msgfull[64], noteleport[64], god[64], icon[64], checkmode[64], speclist[64],specadm[64]
+	new msginvis[64], msgwaterinvis[64], msgfull[64], noteleport[64], god[64], icon[64], checkmode[64], speclist[64],specadm[64], savemenu[64]
 
 	formatex(msginvis, 63, "Invisible Players - %s",  InvisUser[id] ? "\yON" : "\rOFF" )
 	if(theWaterInvis)
@@ -3303,9 +3303,10 @@ public ConfigMenu(id)
 	formatex(msgfull, 63, "Full Invisible - %s^n", full_Invisible[id] ? "\yON" : "\rOFF" )
 	formatex(god, 63, "GodMode - %s", GodModeOn[id] ? "\yON" : "\rOFF" )
 	formatex(noteleport, 63, "Block Teleport - %s", noTeleport[id] ? "\yON" : "\rOFF" )
-	formatex(icon, 63, "Icons - %s", icons[id] ? "\yON" : "\rOFF" )
+	formatex(icon, 63, "Icons - %s^n^n", icons[id] ? "\yON" : "\rOFF" )
 	formatex(checkmode, 63, "CheckPoint Mode - %s^n", TP_MODE[id] ? "\yON" : "\rOFF" )
 	formatex(speclist, 63, "Spectator List - %s", SpecList[id] ? "\yON" : "\rOFF" )
+	formatex(savemenu, 63, "Save Config \d[\r%s\d]", SaveCfgDate[id] ? SaveCfgDate[id] : "n/a")
 
 	if (get_user_flags(id) & KZ_LEVEL_1)
 		formatex(specadm, 63, "Admin Invisible Spec - %s^n", SpecAdmImm[id] ? "\yON" : "\rOFF" )
@@ -3318,10 +3319,17 @@ public ConfigMenu(id)
 	menu_additem( menu, god, "4" )
 	menu_additem( menu, noteleport, "5" )
 	menu_additem( menu, icon, "6" )
-	menu_additem( menu, checkmode, "7" )
-	menu_additem( menu, speclist, "8" )
-	menu_additem( menu, specadm, "9" )
-	menu_additem( menu, "ShowTimer Menu", "10")
+
+	menu_additem( menu, savemenu, "7")
+
+	menu_additem( menu, checkmode, "8" )
+	menu_additem( menu, speclist, "9" )
+	menu_additem( menu, specadm, "10" )
+	menu_additem( menu, "ShowTimer Menu \y[>]^n^n", "10")
+
+	menu_addblank( menu, 1)
+	menu_addblank( menu, 1)
+	menu_additem( menu, savemenu, "12")
 
 	menu_setprop(menu, MPROP_NEXTNAME, "Next")
 	menu_setprop(menu, MPROP_BACKNAME, "Back")
@@ -3373,23 +3381,33 @@ public ConfigMenuHandler(id, menu, item)
 		}
 		case 6:
 		{
+			SQL_ConfigSave(id);
+			ConfigMenu(id);
+		}
+		case 7:
+		{
 			cmdCheckFix(id)
 			ConfigMenu(id)
 
 		}
-		case 7:
+		case 8:
 		{
 			cmdSpeclist(id)
 			ConfigMenu(id)
 		}
-		case 8:
+		case 9:
 		{
 			cmdSpeclistAdm(id)
 			ConfigMenu(id)
 		}
-		case 9:
+		case 10:
 		{
 			ShowTimer_Menu(id)
+		}
+		case 11:
+		{
+			SQL_ConfigSave(id);
+			ConfigMenu(id)
 		}
 	}
 	return PLUGIN_CONTINUE
@@ -3907,17 +3925,17 @@ stock kz_showhtml_motd(id, type)
 		case STATS_TOP:
 		{
 			formatex(namebuffer, 63, "Stats of %s", MapName)
-			formatex(buffer, 1000, "<html><head><meta http-equiv=^"Refresh^" content=^"0;url=https://%s/stats15/%s/?&authid=%s^"></head><body><img style='' src='http://kreedz.ru/images/loading.gif'></body></html>", pgL_sql_files, MapName, kz_authid[id])
+			formatex(buffer, 1000, "<html><head><meta http-equiv=^"Refresh^" content=^"0;url=%s/stats15/%s/?&authid=%s^"></head><body><p>LOADING...</p></body></html>", pgL_sql_files, MapName, kz_authid[id])
 		}
 		case PLAYERS_RANKING:
 		{
 			formatex(namebuffer, 63, "KZ Top15")
-			formatex(buffer, 1000, "<html><head><meta http-equiv=^"Refresh^" content=^"0;url=https://%s/motdtop/1^"></head><body><img style='' src='http://kreedz.ru/images/loading.gif'></body></html>", pgL_sql_files)
+			formatex(buffer, 1000, "<html><head><meta http-equiv=^"Refresh^" content=^"0;url=%s/motdtop/1^"></head><body><p>LOADING...</p></body></html>", pgL_sql_files)
 		}
 		case HELP:
 		{
 			formatex(namebuffer, 63, "Server Info / Help")
-			formatex(buffer, 1000, "<html><head><meta http-equiv=^"Refresh^" content=^"0;url=http://%s/server-info.php^"></head><body><p>LOADING...</p></body></html>", pgL_sql_files)
+			formatex(buffer, 1000, "<html><head><meta http-equiv=^"Refresh^" content=^"0;url=%s/info.php^"></head><body><p>LOADING...</p></body></html>", pgL_sql_files)
 		}
 	}
 
@@ -4307,67 +4325,67 @@ ReadBestRunFile()
 
 	format(szFile, sizeof(szFile) - 1, "%s/%s.txt", szFile, g_szMapName)	// Конечный формат /configs/kz/records/<map>.txt
 
-        if (file_exists(szFile)) 												// Делаем проверку на наличие файла
-        {
-        	g_fileRead = true
-        	read_file(szFile,1,g_ReplayName,63,len)
-        }
-        else
-        	return PLUGIN_HANDLED;
+		if (file_exists(szFile)) 												// Делаем проверку на наличие файла
+		{
+			g_fileRead = true
+			read_file(szFile,1,g_ReplayName,63,len)
+		}
+		else
+			return PLUGIN_HANDLED;
 
-        new hFile = fopen(szFile, "r"); 										// Открываем файл с рекордом
-        new szData[1024];
-        new szBotAngle[2][40], szBotPos[3][60], szBotVel[3][60], szBotButtons[12];
+		new hFile = fopen(szFile, "r"); 										// Открываем файл с рекордом
+		new szData[1024];
+		new szBotAngle[2][40], szBotPos[3][60], szBotVel[3][60], szBotButtons[12];
 
-        new line;
+		new line;
 
-        while(!feof(hFile))
-        {
-        	fgets(hFile, szData, charsmax(szData));
+		while(!feof(hFile))
+		{
+			fgets(hFile, szData, charsmax(szData));
 
-        	if(!szData[0] || szData[0] == '^n')
-        		continue;
+			if(!szData[0] || szData[0] == '^n')
+				continue;
 
-        	if(!line)
-        	{
-        		g_ReplayBestRunTime = str_to_float(szData);
-        		line++;
-        		continue;
-        	}
+			if(!line)
+			{
+				g_ReplayBestRunTime = str_to_float(szData);
+				line++;
+				continue;
+			}
 
-        	strtok(szData, szBotAngle[0], charsmax(szBotAngle[]), szData, charsmax(szData), ' ', true)
-        	strtok(szData, szBotAngle[1], charsmax(szBotAngle[]), szData, charsmax(szData), ' ', true)
+			strtok(szData, szBotAngle[0], charsmax(szBotAngle[]), szData, charsmax(szData), ' ', true)
+			strtok(szData, szBotAngle[1], charsmax(szBotAngle[]), szData, charsmax(szData), ' ', true)
 
-        	strtok(szData, szBotPos[0], charsmax(szBotPos[]), szData, charsmax(szData), ' ', true)
-        	strtok(szData, szBotPos[1], charsmax(szBotPos[]), szData, charsmax(szData), ' ', true)
-        	strtok(szData, szBotPos[2], charsmax(szBotPos[]), szData, charsmax(szData), ' ', true)
+			strtok(szData, szBotPos[0], charsmax(szBotPos[]), szData, charsmax(szData), ' ', true)
+			strtok(szData, szBotPos[1], charsmax(szBotPos[]), szData, charsmax(szData), ' ', true)
+			strtok(szData, szBotPos[2], charsmax(szBotPos[]), szData, charsmax(szData), ' ', true)
 
-        	strtok(szData, szBotVel[0], charsmax(szBotVel[]), szData, charsmax(szData), ' ', true)
-        	strtok(szData, szBotVel[1], charsmax(szBotVel[]), szData, charsmax(szData), ' ', true)
-        	strtok(szData, szBotVel[2], charsmax(szBotVel[]), szData, charsmax(szData), ' ', true)
+			strtok(szData, szBotVel[0], charsmax(szBotVel[]), szData, charsmax(szData), ' ', true)
+			strtok(szData, szBotVel[1], charsmax(szBotVel[]), szData, charsmax(szData), ' ', true)
+			strtok(szData, szBotVel[2], charsmax(szBotVel[]), szData, charsmax(szData), ' ', true)
 
-        	strtok(szData, szBotButtons, charsmax(szBotButtons), szData, charsmax(szData), ' ', true)
+			strtok(szData, szBotButtons, charsmax(szBotButtons), szData, charsmax(szData), ' ', true)
 
-        	ArrayData[flBotAngle][0] = _:str_to_float(szBotAngle[0]);
-        	ArrayData[flBotAngle][1] = _:str_to_float(szBotAngle[1]);
+			ArrayData[flBotAngle][0] = _:str_to_float(szBotAngle[0]);
+			ArrayData[flBotAngle][1] = _:str_to_float(szBotAngle[1]);
 
-        	ArrayData[flBotPos][0] = _:str_to_float(szBotPos[0]);
-        	ArrayData[flBotPos][1] = _:str_to_float(szBotPos[1]);
-        	ArrayData[flBotPos][2] = _:str_to_float(szBotPos[2]);
+			ArrayData[flBotPos][0] = _:str_to_float(szBotPos[0]);
+			ArrayData[flBotPos][1] = _:str_to_float(szBotPos[1]);
+			ArrayData[flBotPos][2] = _:str_to_float(szBotPos[2]);
 
-        	ArrayData[flBotVel][0] = _:str_to_float(szBotVel[0]);
-        	ArrayData[flBotVel][1] = _:str_to_float(szBotVel[1]);
-        	ArrayData[flBotVel][2] = _:str_to_float(szBotVel[2]);
+			ArrayData[flBotVel][0] = _:str_to_float(szBotVel[0]);
+			ArrayData[flBotVel][1] = _:str_to_float(szBotVel[1]);
+			ArrayData[flBotVel][2] = _:str_to_float(szBotVel[2]);
 
-        	ArrayData[iButton] = _: str_to_num(szBotButtons);
+			ArrayData[iButton] = _: str_to_num(szBotButtons);
 
-        	ArrayPushArray(g_DemoPlaybot[0], ArrayData);
-        	line++;
-        }
-        fclose(hFile);
-        bot_restart();
+			ArrayPushArray(g_DemoPlaybot[0], ArrayData);
+			line++;
+		}
+		fclose(hFile);
+		bot_restart();
 
-        return PLUGIN_HANDLED;
+		return PLUGIN_HANDLED;
 }
 
 public ClCmd_UpdateReplay(id, Float:timer)
@@ -4421,8 +4439,8 @@ public bot_restart()
 	{
 		if(!g_bot_id)
      		g_bot_id = Create_Bot(); // Создает бота с id
-     	else
-     		Start_Bot();
+		else
+			Start_Bot();
 	}
 }
 
@@ -4599,7 +4617,7 @@ public bot_overwriting()
 	ReadBestRunFile();
 
 	new txt[64]
-   	StringTimer(g_ReplayBestRunTime, g_bBestTimer, sizeof(g_bBestTimer) - 1);
+	StringTimer(g_ReplayBestRunTime, g_bBestTimer, sizeof(g_bBestTimer) - 1);
 	formatex(txt, charsmax(txt), "[REC] %s %s", g_ReplayName, g_bBestTimer);
 	set_user_info(g_bot_id, "name", txt)
 }
@@ -4626,11 +4644,11 @@ Create_Bot()
 		set_user_info(id, "friends", "0");
 		set_user_info(id, "*bot", "1");
 
-   	set_pev(id, pev_flags, pev(id, pev_flags) | FL_FAKECLIENT);
-   	set_pev(id, pev_colormap, id);
+		set_pev(id, pev_flags, pev(id, pev_flags) | FL_FAKECLIENT);
+		set_pev(id, pev_colormap, id);
 
-   	dllfunc(DLLFunc_ClientConnect, id, "BOT DEMO", "127.0.0.1");
-   	dllfunc(DLLFunc_ClientPutInServer, id);
+		dllfunc(DLLFunc_ClientConnect, id, "BOT DEMO", "127.0.0.1");
+		dllfunc(DLLFunc_ClientPutInServer, id);
 
 		cs_set_user_team(id, CS_TEAM_CT);
 		cs_set_user_model(id, "sas");
@@ -4658,8 +4676,8 @@ Remove_Bot()
 
 Start_Bot()
 {
-   g_bot_frame = 0;
-   start_climb(g_bot_id)
+	g_bot_frame = 0;
+	start_climb(g_bot_id)
 }
 
 public create_bot_icon(id)

@@ -21,8 +21,7 @@ new MapName[64]
 new weapon_name[33]
 new Float:timer_time[33]
 new Float:Update_timer[33]
-// KZ TOP 15 
-new kz_identification[33]
+// KZ TOP 15
 new kz_hash[33]
 new kz_pro1[33]
 new kz_pro3[33]
@@ -46,7 +45,8 @@ new icons[33]
 new TP_MODE[33]
 new noTeleport[32]
 new ShowTime[33]
-new Gagged[33]
+new SaveCfgDate[33][40]
+//new Gagged[33]
 enum
 {
 	TOP_NULL,
@@ -73,15 +73,15 @@ new const g_weaponsnames[][] =
 	"250", "210", "240", "240", "250", "250",
 	"210", "250", "220", "230", "230", "tmp", "210",
 	"250", "250", "235", "221", "250", "245",
-	"250",  "250", "fn57", "mp5", "vest", "vesthelm", 
-	"250", "hegren", "sgren", "defuser", "nvgs", "primammo", 
-	"secammo", "km45", "9x19mm", "nighthawk", "228compact", 
-	"12gauge", "autoshotgun", "mp", "c90", "cv47", "defender", 
-	"clarion", "krieg552", "bullpup", "magnum", "d3au1", 
+	"250",  "250", "fn57", "mp5", "vest", "vesthelm",
+	"250", "hegren", "sgren", "defuser", "nvgs", "primammo",
+	"secammo", "km45", "9x19mm", "nighthawk", "228compact",
+	"12gauge", "autoshotgun", "mp", "c90", "cv47", "defender",
+	"clarion", "krieg552", "bullpup", "magnum", "d3au1",
 	"krieg550"
 }
 
-new const other_weapons_name[8][] = 
+new const other_weapons_name[8][] =
 {
 	"weapon_p90", "weapon_famas", "weapon_sg552", "weapon_awp",
 	"weapon_m4a1", "weapon_m249", "weapon_ak47", "weapon_awp"
@@ -91,13 +91,15 @@ public plugin_sql()
 {
 	new ErrorCode
 	SqlConnection = SQL_Connect(g_SqlTuple,ErrorCode,g_Error,511)
-	
-	if(!SqlConnection) 
+
+	if(!SqlConnection)
 	{
 		server_print("[KZ] Could not connect to SQL database.!")
 		return pause("a")
 	}
-	
+
+	QueryInstallTable();
+
 	return PLUGIN_CONTINUE
 }
 
@@ -108,9 +110,36 @@ public QueryHandle(iFailState, Handle:hQuery, szError[], iErrnum, cData[], iSize
 		log_amx("[KZ] TOP15 SQL: SQL Error #%d - %s", iErrnum, szError)
 		ColorChat(0, GREEN,  "$s ^x01 Error mySQL connect", prefix)
 	}
+	else if( iFailState == TQUERY_QUERY_FAILED )
+	{
+		set_fail_state("Query failed.");
+	}
 
 	SQL_FreeHandle(hQuery)
 	return PLUGIN_CONTINUE
+}
+
+public QueryInstallTable()
+{
+	new CreateInto[1001];
+
+	formatex(CreateInto, 1000, "CREATE TABLE IF NOT EXISTS `kz_config` (`id` int(11) NOT NULL AUTO_INCREMENT,`authid` varchar(32) NOT NULL,`timer` int(2) NOT NULL DEFAULT '1',`invisU` int(2) NOT NULL DEFAULT '0',`invisW` int(2) NOT NULL DEFAULT '0',`invisF` int(2) NOT NULL DEFAULT '0',`bt` int(2) NOT NULL DEFAULT '0',`icon` int(2) NOT NULL DEFAULT '1',`cp` int(2) NOT NULL DEFAULT '0',`sl` int(2) NOT NULL DEFAULT '1',`sa` int(2) NOT NULL DEFAULT '0', `date` datetime NOT NULL, PRIMARY KEY (`id`))");
+	SQL_ThreadQuery(g_SqlTuple, "QueryHandle", CreateInto);
+
+	formatex(CreateInto, 1000, "CREATE TABLE IF NOT EXISTS `kz_top15` (`hash` DECIMAL(5,0) NOT NULL,`name` VARCHAR(64) NOT NULL COLLATE 'latin1_swedish_ci',`authid` VARCHAR(64) NOT NULL COLLATE 'latin1_swedish_ci',`pro1` DECIMAL(5,0) NOT NULL,`pro3` DECIMAL(5,0) NOT NULL,`nub1` DECIMAL(5,0) NOT NULL,`nub3` DECIMAL(5,0) NOT NULL,`point` DECIMAL(5,0) NOT NULL)");
+	SQL_ThreadQuery(g_SqlTuple, "QueryHandle", CreateInto);
+
+	formatex(CreateInto, 1000, "CREATE TABLE IF NOT EXISTS `kz_savepos` (`map_id` INT(10) NOT NULL,`authid` VARCHAR(64) NOT NULL COLLATE 'utf8_general_ci',`time` DECIMAL(65,2) NOT NULL,`x` INT(15) NOT NULL,`y` INT(15) NOT NULL,`z` INT(15) NOT NULL,`x_vel` INT(15) NOT NULL,`y_vel` INT(15) NOT NULL,`z_vel` INT(15) NOT NULL,`weapon` INT(5) NOT NULL,`cp` DOUBLE(22,0) NOT NULL,`tp` DOUBLE(22,0) NOT NULL,`hp` INT(10) NOT NULL,`date` DATETIME NOT NULL)");
+	SQL_ThreadQuery(g_SqlTuple, "QueryHandle", CreateInto);
+
+	formatex(CreateInto, 1000, "CREATE TABLE IF NOT EXISTS `kz_pro15` (`map_id` INT(10) NOT NULL,`mapname` VARCHAR(64) NOT NULL COLLATE 'utf8_general_ci',`authid` VARCHAR(64) NOT NULL COLLATE 'utf8_general_ci',`name` VARCHAR(64) NOT NULL COLLATE 'utf8_general_ci',`time` DECIMAL(65,2) NOT NULL,`date` DATETIME NOT NULL)");
+	SQL_ThreadQuery(g_SqlTuple, "QueryHandle", CreateInto);
+
+	formatex(CreateInto, 1000, "CREATE TABLE IF NOT EXISTS `kz_nub15` (`map_id` INT(10) NOT NULL,`mapname` VARCHAR(64) NOT NULL COLLATE 'utf8_general_ci',`authid` VARCHAR(64) NOT NULL COLLATE 'utf8_general_ci',`name` VARCHAR(64) NOT NULL COLLATE 'utf8_general_ci',`time` DECIMAL(65,2) NOT NULL,`date` DATETIME NOT NULL,`checkpoints` DOUBLE(22,0) NOT NULL,`gocheck` DOUBLE(22,0) NOT NULL)");
+	SQL_ThreadQuery(g_SqlTuple, "QueryHandle", CreateInto);
+
+	formatex(CreateInto, 1000, "CREATE TABLE IF NOT EXISTS `kz_maps` (`id` INT(11) NOT NULL AUTO_INCREMENT,`mapname` VARCHAR(64) NOT NULL COLLATE 'utf8_general_ci',`type` VARCHAR(64) NULL COLLATE 'utf8_general_ci',`challenge` INT(3) NOT NULL DEFAULT '0',`entity` INT(2) NOT NULL DEFAULT '1',`start` VARCHAR(50) NULL COLLATE 'utf8_general_ci',`finish` VARCHAR(50) NULL COLLATE 'utf8_general_ci',PRIMARY KEY (`id`))");
+	SQL_ThreadQuery(g_SqlTuple, "QueryHandle", CreateInto);
 }
 
 /*public SQL_Maplist()
@@ -145,7 +174,7 @@ public QueryHandle(iFailState, Handle:hQuery, szError[], iErrnum, cData[], iSize
       return PLUGIN_HANDLED
 }
 
-public SQL_Maplist_Query(iFailState, Handle:hQuery, szError[], iErrnum, cData[], iSize, Float:fQueueTime) 
+public SQL_Maplist_Query(iFailState, Handle:hQuery, szError[], iErrnum, cData[], iSize, Float:fQueueTime)
 {
 	if( iFailState != TQUERY_SUCCESS )
         return log_amx("KZ ERROR: #%d - %s", iErrnum, szError)
@@ -158,21 +187,20 @@ public SQL_Maplist_Query(iFailState, Handle:hQuery, szError[], iErrnum, cData[],
     return PLUGIN_HANDLED
 }*/
 
-public SQL_MapID() 
+public SQL_MapID()
 {
 	new s_Error[128], startposition[64], finishposition[64], p_start[3][64], p_finish[3][64]
 	new Handle:h_Query = SQL_PrepareQuery(SqlConnection, "SELECT * FROM `kz_maps` WHERE mapname='%s'", MapName)
-	new Handle:h_Query2 = SQL_PrepareQuery(SqlConnection, "SELECT * FROM kz_top15") 	
+	new Handle:h_Query2 = SQL_PrepareQuery(SqlConnection, "SELECT * FROM kz_top15")
 
- 	if(SQL_Execute(h_Query2))
- 		all_rank = SQL_NumResults(h_Query2)
+	if(SQL_Execute(h_Query2))
+		all_rank = SQL_NumResults(h_Query2)
 
-  if(!SQL_Execute(h_Query))
+	if(!SQL_Execute(h_Query))
 	{
-     	SQL_QueryError(h_Query, s_Error, charsmax(s_Error))
-      server_print("[KZ] MapID Error: %s", s_Error)
-	} 
-	else 
+		SQL_QueryError(h_Query, s_Error, charsmax(s_Error));
+	}
+	else
 	{
 		new mapid = SQL_FieldNameToNum(h_Query, "id")
 		new type = SQL_FieldNameToNum(h_Query, "type")
@@ -220,21 +248,27 @@ public SQL_MapID()
 	if(equali(kz_maptype, "axn")) mapIsAXN = true;
 	if(equali(kz_maptype, "slide")) mapIsSlide = true;
 	if(equali(kz_maptype, "gravity")) mapIsGravity = true;
-	if(equali(kz_maptype, "")) kz_maptype = "Unknown";
+	if(equali(kz_maptype, "")) kz_maptype = "n/a";
 
-	if (delete_entity) 
+	if (delete_entity)
 	{
 		for(new i = 0; i < sizeof(g_remove_ent); i++)
 			sx_remove_entity(g_remove_ent[i], "classname", 0, "")
 	}
 
- 	SQL_FreeHandle(h_Query)
- 	SQL_FreeHandle(h_Query2)
- 	server_print("[KZ_SQL] ID Map = %d", kz_mapID)
- 	server_print("[KZ_SQL] Type map = %s", kz_maptype)
- 	server_print("[KZ_SQL] All rank = %d", all_rank)
+	if(!kz_mapID)
+	{
+		SQL_QueryAndIgnore(SqlConnection, "INSERT INTO `kz_maps` (`mapname`) VALUES ('%s');", MapName);
+	}
 
-   return PLUGIN_HANDLED
+	SQL_FreeHandle(h_Query)
+	SQL_FreeHandle(h_Query2)
+
+	server_print("[KZ_SQL] ID Map = %d", kz_mapID)
+	server_print("[KZ_SQL] Type map = %s", kz_maptype)
+	server_print("[KZ_SQL] All rank = %d", all_rank)
+
+	return PLUGIN_HANDLED
 }
 
 public SQL_StartFinish(bool:L, Float:position[3])
@@ -247,7 +281,7 @@ public SQL_StartFinish(bool:L, Float:position[3])
 	SQL_ThreadQuery(g_SqlTuple, "SQL_WorkHandle", createinto)
 }
 
-public SQL_StatsAdd(iFailState, Handle:hQuery, szError[], iErrnum, cData[], iSize, Float:fQueueTime) 
+public SQL_StatsAdd(iFailState, Handle:hQuery, szError[], iErrnum, cData[], iSize, Float:fQueueTime)
 {
 	new id = cData[0]
 	new style = cData[1]
@@ -271,7 +305,7 @@ public SQL_StatsAdd(iFailState, Handle:hQuery, szError[], iErrnum, cData[], iSiz
 	new weapon = get_user_weapon(id)
 	get_weaponname(weapon, weapon_name, charsmax(weapon_name))
 
-	for(new i = 0; i < 8; i++) 
+	for(new i = 0; i < 8; i++)
 	{
 		if(equali(other_weapons_name[i], weapon_name))
 		{
@@ -279,25 +313,25 @@ public SQL_StatsAdd(iFailState, Handle:hQuery, szError[], iErrnum, cData[], iSiz
 		}
 	}
 
-		if (SQL_NumResults(hQuery) == 0) 
+		if (SQL_NumResults(hQuery) == 0)
 		{
 			formatex(checkpoints, 31, ", '%d'", check)
 			formatex(gochecks, 31, ", '%d'", gocheck)
 
-			if (user_weapon && get_pcvar_num(sv_airaccelerate) == 10) 
+			if (user_weapon && get_pcvar_num(sv_airaccelerate) == 10)
 			{
-				formatex( createinto, sizeof createinto - 1, "INSERT INTO `%s` VALUES ('%d', '%s', '%s', '%s', '%s', '%f', '%s'%s%s)", style == PRO_TOP ? "kz_weapon_pro" : "kz_weapon_nub", kz_mapID, MapName, g_weaponsnames[wpn], kz_authid[id], name, time, recdata, style == PRO_TOP ? "" : checkpoints, style == PRO_TOP ? "" : gochecks);		
+				formatex( createinto, sizeof createinto - 1, "INSERT INTO `%s` VALUES ('%d', '%s', '%s', '%s', '%s', '%f', '%s'%s%s)", style == PRO_TOP ? "kz_weapon_pro" : "kz_weapon_nub", kz_mapID, MapName, g_weaponsnames[wpn], kz_authid[id], name, time, recdata, style == PRO_TOP ? "" : checkpoints, style == PRO_TOP ? "" : gochecks);
 				SQL_ThreadQuery(g_SqlTuple, "QueryHandle", createinto )
-				GetNewRank(id, style, true)				
-			} 
-			else 
+				GetNewRank(id, style, true)
+			}
+			else
 			{
 				formatex( createinto, sizeof createinto - 1, "INSERT INTO `%s%s` VALUES ('%d', '%s', '%s', '%s', '%f', '%s'%s%s)", style == PRO_TOP ? "kz_pro15" : "kz_nub15", get_pcvar_num(sv_airaccelerate) == 100 ? "_100aa" : "", kz_mapID, MapName, kz_authid[id], name, time, recdata, style == PRO_TOP ? "" : checkpoints, style == PRO_TOP ? "" : gochecks);
 				SQL_ThreadQuery(g_SqlTuple, "QueryHandle", createinto )
 				GetNewRank(id, style, false)
 			}
 		}
-		else 
+		else
 		{
 			new Float:oldtime, Float:thetime
 			SQL_ReadResult(hQuery, 0, oldtime)
@@ -310,13 +344,13 @@ public SQL_StatsAdd(iFailState, Handle:hQuery, szError[], iErrnum, cData[], iSiz
 
 				show_finish_message(id, thetime, false, true) // Сообщение, если рекорд поставлен и время на сколько быстрее.
 
-				if (user_weapon && get_pcvar_num(sv_airaccelerate) == 10) 
+				if (user_weapon && get_pcvar_num(sv_airaccelerate) == 10)
 				{
 					formatex(createinto, sizeof createinto - 1, "UPDATE `%s` SET time='%f', date='%s' %s%s WHERE map_id='%d' AND weapon='%s' AND authid='%s'", style == PRO_TOP ? "kz_weapon_pro" : "kz_weapon_nub", time, recdata, style == PRO_TOP ? "" : checkpoints, style == PRO_TOP ? "" : gochecks, kz_mapID, g_weaponsnames[wpn], kz_authid[id])
 					SQL_ThreadQuery(g_SqlTuple, "QueryHandle", createinto )
 					GetNewRank(id, style, true)
-				} 
-				else 
+				}
+				else
 				{
 					formatex(createinto, sizeof createinto - 1, "UPDATE `%s%s` SET time='%f', date='%s' %s%s WHERE map_id='%d' AND authid='%s'", style == PRO_TOP ? "kz_pro15" : "kz_nub15", get_pcvar_num(sv_airaccelerate) == 100 ? "_100aa" : "", time, recdata, style == PRO_TOP ? "" : checkpoints, style == PRO_TOP ? "" : gochecks, kz_mapID, kz_authid[id])
 					SQL_ThreadQuery(g_SqlTuple, "QueryHandle", createinto )
@@ -336,7 +370,7 @@ public SQL_StatsAdd(iFailState, Handle:hQuery, szError[], iErrnum, cData[], iSiz
 stock GetNewRank(id, type, bool:user_weapon)
 {
 	new createinto[1000];
-	
+
 	new cData[2]
 	cData[0] = id
 	cData[1] = type
@@ -344,7 +378,7 @@ stock GetNewRank(id, type, bool:user_weapon)
 
 	if (user_weapon && get_pcvar_num(sv_airaccelerate) == 10)
 		formatex(createinto, charsmax(createinto), "SELECT authid FROM `%s` WHERE map_id='%d' AND weapon='%s' ORDER BY time", type == PRO_TOP ? "kz_weapon_pro" : "kz_weapon_nub", kz_mapID, g_weaponsnames[wpn])
-	else 
+	else
 		formatex(createinto, charsmax(createinto), "SELECT authid FROM `%s%s` WHERE map_id='%d' ORDER BY time", type == PRO_TOP ? "kz_pro15" : "kz_nub15", get_pcvar_num(sv_airaccelerate) == 100 ? "_100aa" : "", kz_mapID)
 
 	SQL_ThreadQuery(g_SqlTuple, "GetNewRank_QueryHandler", createinto, cData, 2)
@@ -357,7 +391,7 @@ public GetNewRank_QueryHandler(iFailState, Handle:hQuery, szError[], iErrnum, cD
 	{
 		return log_amx("TOP15 SQL: SQL Error #%d - %s", iErrnum, szError)
 	}
-	
+
 	new authid[32], namez[32], i = 0
 	get_user_name(id, namez, 31)
 
@@ -365,7 +399,7 @@ public GetNewRank_QueryHandler(iFailState, Handle:hQuery, szError[], iErrnum, cD
 	new weapon = get_user_weapon(id)
 	get_weaponname(weapon, weapon_name, charsmax(weapon_name))
 
-	for(new i = 0; i < 8; i++) 
+	for(new i = 0; i < 8; i++)
 	{
 		if(equali(other_weapons_name[i], weapon_name))
 		{
@@ -379,9 +413,9 @@ public GetNewRank_QueryHandler(iFailState, Handle:hQuery, szError[], iErrnum, cD
 		SQL_ReadResult(hQuery, 0, authid, 31)
 			if( equal(authid, kz_authid[id]) )
 			{
-				if (user_weapon) 
+				if (user_weapon)
 					ColorChat(0, RED,  "^x04%s^x03 %s^x04 is now ^x03%d^x04 in^x03 %s^x04",prefix, namez, i, cData[1] == PRO_TOP ? "Professional Weapon Top" : "General Weapon Top");
-				else 
+				else
 					ColorChat(0, RED,  "^x04%s^x03 %s^x04 is now ^x03%d^x04 in^x03 %s^x04",prefix, namez, i, cData[1] == PRO_TOP ? "Professional Top" : "General Top");
 
 				if( i == 1)
@@ -391,8 +425,8 @@ public GetNewRank_QueryHandler(iFailState, Handle:hQuery, szError[], iErrnum, cD
 
 					} else {
 						if (cData[1] == PRO_TOP && !Savepos_activated[id])
-               		ClCmd_UpdateReplay(id, Update_timer[id])
-               			
+							ClCmd_UpdateReplay(id, Update_timer[id])
+
 						emit_sound(0, CHAN_VOICE, "kzvc.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
 					}
 				}
@@ -408,8 +442,8 @@ public GetNewRank_QueryHandler(iFailState, Handle:hQuery, szError[], iErrnum, cD
 public mytime(id, type)
 {
 	new createinto[256], cData[2]
-   cData[0] = id
-   cData[1] = type
+	cData[0] = id
+	cData[1] = type
 	formatex(createinto, sizeof createinto - 1, "SELECT * FROM %s%s WHERE map_id='%d' AND authid='%s'", type == PRO_TOP ? "kz_pro15" : "kz_nub15", get_pcvar_num(sv_airaccelerate) == 100 ? "_100aa" : "", kz_mapID, kz_authid[id])
 	SQL_ThreadQuery(g_SqlTuple, "SQL_MyTimeHandle", createinto, cData, 2)
 }
@@ -432,9 +466,9 @@ public SQL_MyTimeHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSi
 	}
 	else
 	{
-		if(SQL_NumResults(hQuery)) 
+		if(SQL_NumResults(hQuery))
 		{
-			if (type == PRO_TOP) 
+			if (type == PRO_TOP)
 				SQL_ReadResult(hQuery, 4, kz_my_protime[id])
 			else
 				SQL_ReadResult(hQuery, 4, kz_my_nubtime[id])
@@ -457,7 +491,7 @@ public SQL_MyTimeHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSi
 public SQL_profile(id)
 {
 	new createinto[128], cData[1]
-   cData[0] = id
+	cData[0] = id
 	formatex(createinto, sizeof createinto - 1, "SELECT * FROM kz_top15 WHERE authid='%s'", kz_authid[id])
 	SQL_ThreadQuery(g_SqlTuple, "SQL_profileHandle", createinto, cData, 1)
 }
@@ -523,7 +557,7 @@ public kz_profile(id)
 	} else {
 		kz_lvl = "VIP LVL 3";
 	}
-	
+
 	if( get_user_flags(id) & ADMIN_IMMUNITY ) {
 		format(vip_status, 58, "\r%s", VIP_ACCESS(id))
 		format(vip_add, 58, "\dYou have the admin.")
@@ -551,15 +585,15 @@ public kz_profile(id)
 	len += format(menu[len], 1279-len, "\yPro top 1,2,3 Records:\w %d^n^n", kz_pro3[id])
 	len += format(menu[len], 1279-len, "\yGeneral Records:\w %d^n", kz_nub1[id])
 	len += format(menu[len], 1279-len, "\yGeneral top 1,2,3 Records:\w %d^n^n", kz_nub3[id])
-	
-	format(menu[len], 1279-len, "\r1. %s^n\r2. Update stats^n\r3. Save Config^n^n\r0.\w Exit to Main menu", vip_add)
+
+	format(menu[len], 1279-len, "\r1. %s^n\r2. Update stats^n^n\r0.\w Back to Main menu", vip_add)
 	show_menu(id, (1<<0)|(1<<1)|(1<<2)|(1<<9), menu, -1, "KZ Profile")
-	
-	return PLUGIN_HANDLED 
+
+	return PLUGIN_HANDLED
 }
 
 public kz_profileHandle(id, key) {
-	
+
 	switch(key) {
 		case 0:{
 			if( !(get_user_flags(id) & ADMIN_IMMUNITY)) {
@@ -590,9 +624,6 @@ public kz_profileHandle(id, key) {
 		case 1: {
 			SQL_profile(id)
 		}
-		case 2: {
-			SQL_ConfigSave(id)
-		}
 		case 9:{
 			top15menu(id)
 		}
@@ -602,11 +633,11 @@ public kz_profileHandle(id, key) {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SQL CFG ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-public SQL_Config(id) 
+public SQL_Config(id)
 {
 	new createinto[128], cData[1]
-   cData[0] = id
-	formatex(createinto, sizeof createinto - 1, "SELECT * FROM uq_players WHERE authid='%s'", kz_authid[id])
+	cData[0] = id
+	formatex(createinto, sizeof createinto - 1, "SELECT * FROM kz_config WHERE authid='%s'", kz_authid[id])
 	SQL_ThreadQuery(g_SqlTuple, "SQL_ConfigHandle", createinto, cData, 1)
 }
 
@@ -630,19 +661,18 @@ public SQL_ConfigHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSi
 	{
 		if(SQL_NumResults(hQuery))
 		{
-			kz_identification[id] = SQL_ReadResult(hQuery, 0)
-			ShowTime[id] = SQL_ReadResult(hQuery, 5)
-			InvisUser[id] = SQL_ReadResult(hQuery, 6)
-			InvisWater[id] = SQL_ReadResult(hQuery, 7)
-			full_Invisible[id] = SQL_ReadResult(hQuery, 8)
-			noTeleport[id] = SQL_ReadResult(hQuery, 9)
-			icons[id] = SQL_ReadResult(hQuery, 10)
-			TP_MODE[id] = SQL_ReadResult(hQuery, 11)
-			SpecList[id] = SQL_ReadResult(hQuery, 12)
-			SpecAdmImm[id] = SQL_ReadResult(hQuery, 13)
-			Gagged[id] = SQL_ReadResult(hQuery, 15)
+			ShowTime[id] = SQL_ReadResult(hQuery, 2)
+			InvisUser[id] = SQL_ReadResult(hQuery, 3)
+			InvisWater[id] = SQL_ReadResult(hQuery, 4)
+			full_Invisible[id] = SQL_ReadResult(hQuery, 5)
+			noTeleport[id] = SQL_ReadResult(hQuery, 6)
+			icons[id] = SQL_ReadResult(hQuery, 7)
+			TP_MODE[id] = SQL_ReadResult(hQuery, 8)
+			SpecList[id] = SQL_ReadResult(hQuery, 9)
+			SpecAdmImm[id] = SQL_ReadResult(hQuery, 10)
+			SQL_ReadResult(hQuery, 11, SaveCfgDate[id], charsmax(SaveCfgDate))
 		}
-		else 
+		else
 		{
 			InvisUser[id] = 0
 			InvisWater[id] = 0
@@ -653,7 +683,7 @@ public SQL_ConfigHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSi
 			SpecList[id] = 1
 			SpecAdmImm[id] = 0
 			ShowTime[id] = 1
-			Gagged[id] = 0;
+			//Gagged[id] = 0;
 		}
 	}
 
@@ -663,9 +693,50 @@ public SQL_ConfigHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSi
 
 public SQL_ConfigSave(id)
 {
-	new createinto[1001]
-	formatex(createinto, sizeof createinto - 1, "UPDATE `uq_players` SET `timer` = '%d',`invisU` = '%s',`invisW` = '%s',`invisF` = '%s',`bt` = '%s',`icon` = '%s',`cp` = '%s',`sl` = '%s',`sa` = '%s' WHERE (`authid` = '%s')", ShowTime[id],(InvisUser[id] ? "1":"0"),(InvisWater[id] ? "1":"0"),(full_Invisible[id] ? "1":"0"),(noTeleport[id] ? "1":"0"),(icons[id] ? "1":"0"),(TP_MODE[id] ? "1":"0"),(SpecList[id] ? "1":"0"),(SpecAdmImm[id] ? "1":"0"), kz_authid[id])
-	SQL_ThreadQuery(g_SqlTuple, "SQL_WorkHandle", createinto)
+	new createinto[128], cData[1]
+	cData[0] = id
+	formatex(createinto, sizeof createinto - 1, "SELECT * FROM kz_config WHERE authid='%s'", kz_authid[id]);
+	SQL_ThreadQuery(g_SqlTuple, "SQL_ConfigSaveHandle", createinto, cData, 1);
+}
+
+public SQL_ConfigSaveHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSize, Float:fQueueTime)
+{
+	new id = cData[0]
+	new nowdate[40];
+	get_time("%Y-%m-%d %H:%M:%S", nowdate, sizeof nowdate - 1)
+	SaveCfgDate[id] = nowdate;
+
+	if( failstate == TQUERY_CONNECT_FAILED )
+	{
+		set_fail_state("Could not connect to database.");
+	}
+	else if( failstate == TQUERY_QUERY_FAILED )
+	{
+		set_fail_state("Query failed.");
+	}
+	else if( errcode )
+	{
+		log_amx("Error on query: %s", error);
+	}
+	else
+	{
+		if(SQL_NumResults(hQuery))
+		{
+			new createinto[1001];
+			formatex(createinto, sizeof createinto - 1, "UPDATE `kz_config` SET `timer` = '%d',`invisU` = '%d',`invisW` = '%d',`invisF` = '%d',`bt` = '%d',`icon` = '%d',`cp` = '%d',`sl` = '%d',`sa` = '%d', `date` = '%s' WHERE (`authid` = '%s')", ShowTime[id], InvisUser[id], InvisWater[id], full_Invisible[id], noTeleport[id], icons[id], TP_MODE[id], SpecList[id], SpecAdmImm[id], SaveCfgDate[id], kz_authid[id]);
+			SQL_ThreadQuery(g_SqlTuple, "SQL_WorkHandle", createinto);
+			ColorChat(id, BLUE, "^x01%s^x03 The config was saved successfully.", prefix)
+		}
+		else
+		{
+			new createinto[1001];
+			formatex(createinto, sizeof createinto - 1, "INSERT INTO `kz_config` VALUES (null, '%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s')", kz_authid[id], ShowTime[id], InvisUser[id], InvisWater[id], full_Invisible[id], noTeleport[id], icons[id], TP_MODE[id], SpecList[id], SpecAdmImm[id], SaveCfgDate[id]);
+			SQL_ThreadQuery(g_SqlTuple, "SQL_WorkHandle", createinto);
+			ColorChat(id, BLUE, "^x01%s^x03 The config was saved successfully.", prefix)
+		}
+	}
+
+	SQL_FreeHandle(hQuery)
 }
 
 public SQL_WorkHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSize, Float:fQueueTime)
@@ -694,7 +765,7 @@ public SQL_WorkHandle(failstate, Handle:hQuery, error[], errcode, cData[], iSize
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SAVE POSITION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-public SQL_Check_Savepos(id) 
+public SQL_Check_Savepos(id)
 {
 	Savepos_have[id] = true;
 	new createinto[128], cData[1]
@@ -747,7 +818,7 @@ public SQL_SaveposHandle(failstate, Handle:hQuery, error[], errcode, cData[], iS
 			Savepos_have[id] = false;
 		}
 	}
-	
+
 	SQL_FreeHandle(hQuery)
 }
 
@@ -765,9 +836,9 @@ public SQL_Savepos(id)
 
 	//if( !( pev( id, pev_flags ) & FL_ONGROUND ))
 
-	new Float:Time,check,gocheck 	
+	new Float:Time,check,gocheck
 	new save_data[64], createinto[512]
-   
+
 	new Float:origin[3], Float:velocity[3]
 	pev(id, pev_origin, origin)
 	pev(id, pev_velocity, velocity)
@@ -792,7 +863,7 @@ public SQL_Savepos(id)
 	SQL_ThreadQuery(g_SqlTuple, "SQL_WorkHandle", createinto)
 
 	reset_checkpoints(id)
-	Savepos_have[id] = true; // 
+	Savepos_have[id] = true; //
 
 	return PLUGIN_HANDLED
 }
@@ -815,13 +886,13 @@ public SQL_Savepos_menu(id)
 
 
 	formatex(title, charsmax(title), "\dSave position Menu^n^n\w[TIME] = %s^n[WPN] = %s^n[CP/TP] = %d/%d^n[HP] = %s^n[DATE] = %s", SavedTimeConvert[id], Weapon_Converter(SavedWeapon[id]), SavedChecks[id],SavedGoChecks[id],g_HP, SavedDate[id])
-	new menu = menu_create(title, "SQL_Savepos_Handler") 
-	
+	new menu = menu_create(title, "SQL_Savepos_Handler")
+
 	menu_additem( menu, "\yLOAD TIMER\w^n", "1" )
 	menu_additem( menu, "\rDELETE\w old run and start new", "2" )
 	menu_setprop(menu, MPROP_EXIT,MEXIT_NEVER)
 	menu_display(id, menu, 0)
-	
+
 	return PLUGIN_HANDLED
 }
 
@@ -829,7 +900,7 @@ public SQL_Savepos_Handler(id, menu, item)
 {
 	new createinto[128]
 
-	switch(item) 
+	switch(item)
 	{
 		case 0:
 		{
@@ -875,7 +946,7 @@ public SQL_Teleport_to_Savepos(id)
 	set_pev(id, pev_flags, pev(id, pev_flags) | FL_DUCKING )
 	set_pev(id, pev_origin, origin)
 	set_pev(id, pev_velocity, velocity)
-	
+
 	for (new i = 0; i < 10; i++)
 	{
 		CheckPoint(id)

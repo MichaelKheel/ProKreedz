@@ -425,7 +425,7 @@ public GetNewRank_QueryHandler(iFailState, Handle:hQuery, szError[], iErrnum, cD
 
 					} else {
 						if (cData[1] == PRO_TOP && !Savepos_activated[id])
-               		ClCmd_UpdateReplay(id, Update_timer[id])
+							ClCmd_UpdateReplay(id, Update_timer[id])
 
 						emit_sound(0, CHAN_VOICE, "kzvc.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
 					}

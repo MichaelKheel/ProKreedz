@@ -422,15 +422,19 @@ public plugin_init()
 	kz_register_saycmd("stuck", "goto_stuck", 0)
 	kz_register_saycmd("reset", "reset_checkpoints", 0)
 
-	// Standart Klava keys
+	// Default keys block
 	register_clcmd("drop", "BlockDrop")
 	register_clcmd("kill", "client_kill")
-	//register_concmd("nightvision","ToggleNVG")
 	register_clcmd("radio1", "BlockRadio")
 	register_clcmd("radio2", "BlockRadio")
 	register_clcmd("radio3", "BlockRadio")
+	// Block Vote
+	register_clcmd("vote","vote_block")
+	register_clcmd("votekick","vote_block")
+	register_clcmd("voteban","vote_block")
+	register_clcmd("votemap","vote_block")
+	// Native commands
 	register_clcmd("chooseteam", "kz_menu")
-	register_clcmd("+commandmenu", "top15menu")
 
 	kz_register_saycmd("pause", "Pause", 0)
 	kz_register_saycmd("teleport","cmdTeleportMenu",0)
@@ -479,15 +483,10 @@ public plugin_init()
 	kz_register_saycmd("top15", "top15menu",0)
 	kz_register_saycmd("top", "top15menu",0)
 	kz_register_saycmd("top10", "top15menu",0)
-
+	// Measure
 	kz_register_saycmd("measure", "cmdMeasure", 0)
 	kz_register_saycmd("distance", "cmdMeasure", 0)
 	register_menucmd( register_menuid( "\wMeasure Menu^n^n" ), 1023, "menuAction" );
-	// Block Vote
-	register_clcmd("vote","vote_block")
-	register_clcmd("votekick","vote_block")
-	register_clcmd("voteban","vote_block")
-	register_clcmd("votemap","vote_block")
 
 	// Develop режим
 	register_concmd("amx_addsavepos", "give_savepos", _, "<#userid> <timer> <cp> <tp>")
@@ -505,9 +504,8 @@ public plugin_init()
 	RegisterHam(Ham_Touch, "weapon_scout", "Ham_HookScout", false);
 	// Отлов нанесения урона противнику
 	RegisterHam ( Ham_TakeDamage, "player", "UserBeforeDamage", 0)
-
 	// Оружие больше не подбирается
-	register_forward(FM_Touch,"fwdTouch")
+	register_forward(FM_Touch, "fwdTouch")
 	// Изменение типа игры
 	register_forward(FM_GetGameDescription, "fwGetGameDescription")
 	// Исчезновение оружия
@@ -568,10 +566,10 @@ public plugin_init()
 	new Ent = engfunc(EngFunc_CreateNamedEntity,engfunc(EngFunc_AllocString,"info_target"));
 	set_pev(Ent, pev_classname, "bot_record");
 	set_pev(Ent, pev_nextthink, 0.01);
- 		// Цикл создание array для записи рекорда
+ 	// Цикл создание array для записи рекорда
 	for(new i; i < sizeof g_DemoReplay; i++)
 		g_DemoReplay[i] = ArrayCreate(DemoData, 1);
-   // Cоздание array для проигрывания рекорда
+	// Cоздание array для проигрывания рекорда
 	g_DemoPlaybot[0] = ArrayCreate(DemoData, 1);
 
 	g_MsgStatusText = get_user_msgid("StatusText")
@@ -585,8 +583,6 @@ public plugin_init()
 	entity_set_string(iTimer, EV_SZ_classname, "hud_update")
 	register_think("hud_update", "timer_task")
 
-	// Создаем общий путь к папке /addons/amxmodx/data
-	get_localinfo("amxx_datadir", DATADIR, charsmax(DATADIR));
 	// Цикл для блокировки покупки оружия
 	for(new i = 0; i < sizeof(g_block_commands) ; i++)
 		register_clcmd(g_block_commands[i], "BlockBuy")
@@ -637,6 +633,21 @@ public plugin_init()
 	SQL_MapID()
 
 	return PLUGIN_CONTINUE
+}
+
+public plugin_cfg()
+{
+	// global path to /addons/amxmodx/data
+	get_localinfo("amxx_datadir", DATADIR, charsmax(DATADIR));
+	// getting information on server config
+	sv_airaccelerate = get_cvar_pointer("sv_airaccelerate");
+	sv_gravity = get_cvar_pointer("sv_gravity");
+
+	server_print("[KZ] Airaccelerate = %d", get_pcvar_num(sv_airaccelerate))
+	server_print("[KZ] Gravity = %d", get_pcvar_num(sv_gravity))
+
+	// Load best run
+	ReadBestRunFile()
 }
 
 public plugin_end()
@@ -745,19 +756,6 @@ public plugin_precache()
 	precache_sound("give_hook.wav")
 	precache_sound("misc/woohoo.wav")
 	g_flBeam = precache_model( "sprites/zbeam4.spr" );
-}
-
-public plugin_cfg()
-{
-	// getting information on server config
-	sv_airaccelerate = get_cvar_pointer("sv_airaccelerate");
-	sv_gravity = get_cvar_pointer("sv_gravity");
-
-	server_print("[KZ] Airaccelerate = %d", get_pcvar_num(sv_airaccelerate))
-	server_print("[KZ] Gravity = %d", get_pcvar_num(sv_gravity))
-
-	// Load best run
-	ReadBestRunFile()
 }
 
 kz_add_spawn()
